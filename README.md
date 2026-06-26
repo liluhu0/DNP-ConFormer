@@ -1,61 +1,121 @@
 # DNP-ConFormer: Diverse Normal Prototypes-Guided Contrastive Reconstruction for Medical Anomaly Detection
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MICCAI 2026](https://img.shields.io/badge/MICCAI-2026-blue.svg)](https://conferences.miccai.org/2026/)
 
 ## News
 
-- **[2026/06]** Our paper has been **provisionally accepted to MICCAI 2026**.
+- **[2026/06]** DNP-ConFormer has been **provisionally accepted to MICCAI 2026**.
+- The official code is released at [liluhu0/DNP-ConFormer](https://github.com/liluhu0/DNP-ConFormer).
 
-**DNP-ConFormer** is a medical anomaly detection framework based on diverse normal prototypes-guided contrastive reconstruction. It learns compact normal representations with prototype-guided reconstruction and contrastive supervision for image-level anomaly detection in medical datasets.
+**DNP-ConFormer** is a unified medical anomaly detection framework for domain-adaptive contrastive reconstruction. It combines a trainable student encoder, a momentum teacher encoder, Diverse Normal Prototypes (DNPs), and a Diversity-Aware Alignment loss to improve anomaly detection and localization under medical domain shifts.
+
+![DNP-ConFormer Pipeline](assets/fig/pipeline.png)
 
 ## Highlights
 
-- **Diverse Normal Prototypes**: Represents normal patterns with multiple learnable prototype tokens to improve coverage of normal appearance variation.
-- **Prototype-guided Reconstruction**: Reconstructs encoder features through INP-guided decoder blocks for anomaly-sensitive feature comparison.
-- **Contrastive Optimization**: Uses global cosine-based contrastive objectives and optional EMA encoder guidance to stabilize training.
-- **Medical Dataset Support**: Provides dataset preparation scripts for APTOS2019, Br35H, and ISIC2018, with a generic normal/abnormal folder loader.
-- **Transformer Backbones**: Supports DINOv2, DINOv1, and BEiT-style vision transformer encoders.
+- **Domain-adaptive reconstruction**: Replaces a purely frozen-teacher setup with an asymmetric student-teacher design and a momentum-updated target encoder.
+- **Diverse Normal Prototypes**: Extracts multiple normal prototypes from encoder features to represent different modes of normality.
+- **DNP-guided decoding**: Injects prototypes into the decoder through cross-attention to guide feature reconstruction.
+- **Diversity-Aware Alignment**: Reduces prototype collapse by encouraging balanced feature-to-prototype assignments.
+- **Cross-modality robustness**: Evaluated on APTOS2019, OCT2017, ISIC2018, and an in-house BrainMRI dataset.
 
 ## Method
 
-DNP-ConFormer consists of three core components:
+DNP-ConFormer consists of four main components.
 
-### 1. Vision Transformer Encoder
+### 1. Trainable Student Branch
 
-The framework extracts hierarchical visual tokens from a frozen or partially trainable transformer encoder. The default encoder is `dinov2reg_vit_small_14`, with support for base and large variants.
+Given an input image, the student encoder extracts multi-layer ViT features and aggregates them into a unified representation. Unlike reverse distillation methods that keep the teacher encoder fixed, DNP-ConFormer allows the student encoder to adapt to medical-domain visual patterns.
 
-### 2. Diverse Normal Prototype Modeling
+### 2. Momentum Teacher Branch
 
-Learnable prototype tokens aggregate normal feature patterns through attention blocks. These prototypes guide the decoder and provide an auxiliary prototype compactness objective.
+A teacher encoder is updated by exponential moving average (EMA) from the student encoder. This slowly evolving target branch provides stable reference features while preserving useful pretrained knowledge.
 
-### 3. Contrastive Feature Reconstruction
+![Encoder Adaptation](assets/fig/train_encoder.png)
 
-The decoder reconstructs encoder features under prototype guidance. Training minimizes cosine-based reconstruction discrepancies, with optional EMA encoder contrast for more stable feature targets.
+![Training Iteration Trends](assets/fig/performance_vs_training_iterations.png)
+
+### 3. Diverse Normal Prototype Extraction
+
+DNP-ConFormer introduces learnable prototype tokens and uses cross-attention to discover Diverse Normal Prototypes from normal feature distributions. These prototypes capture different semantic modes of normal medical appearance.
+
+The paper observes that INP-style coherence objectives may suffer from prototype collapse in low-contrast medical images. DNP-ConFormer addresses this with Diversity-Aware Alignment.
+
+| INP-Former | DNP-ConFormer |
+| --- | --- |
+| ![Prototype collapse in INP-Former](assets/fig/prototype_collapse_inpformer.png) | ![Balanced prototypes in DNP-ConFormer](assets/fig/prototype_balanced_ours.png) |
+
+### 4. DNP-Guided Contrastive Reconstruction
+
+The bottleneck representation is decoded with prototype guidance. Training optimizes a soft-mining contrastive reconstruction loss together with the Diversity-Aware Alignment loss:
+
+```text
+L_total = L_sm^{M2+} + lambda * L_daa
+```
+
+This objective improves representation adaptation while keeping prototype assignments balanced and discriminative.
+
+## Results
+
+### Public Benchmarks
+
+DNP-ConFormer is evaluated on three public benchmarks. All results are averaged over five independent runs.
+
+| Dataset | AUC | F1 | ACC |
+| --- | ---: | ---: | ---: |
+| APTOS2019 | **97.92** | **95.69** | **93.91** |
+| OCT2017 | **99.83** | **99.13** | **98.70** |
+| ISIC2018 | **91.73** | **82.61** | **87.05** |
+
+### BrainMRI Clinical Dataset
+
+| Level | AUC | AP | F1 | ACC / AUPRO |
+| --- | ---: | ---: | ---: | ---: |
+| Image-level | **92.52** | - | **87.10** | **85.39 ACC** |
+| Pixel-level | **98.53** | **46.03** | **51.10** | **89.27 AUPRO** |
+
+### Qualitative Visualization
+
+DNP-ConFormer generates focused anomaly maps that align with pathological regions while suppressing background noise.
+
+| APTOS2019 | OCT2017 | ISIC2018 |
+| --- | --- | --- |
+| ![APTOS2019 anomaly map](assets/fig/anomaly_aptos.png) | ![OCT2017 anomaly map](assets/fig/anomaly_oct2017.png) | ![ISIC2018 anomaly map](assets/fig/anomaly_isic2018.png) |
+
+| BrainMRI Example 1 | BrainMRI Example 2 | BrainMRI Example 3 |
+| --- | --- | --- |
+| ![BrainMRI anomaly map 1](assets/fig/anomaly_brainmri_c0.png) | ![BrainMRI anomaly map 2](assets/fig/anomaly_brainmri_c2.png) | ![BrainMRI anomaly map 3](assets/fig/anomaly_brainmri_c5.png) |
 
 ## Project Structure
 
 ```text
 DNP-ConFormer/
-|-- main.py                  # Training and testing entry point
-|-- dataset.py               # Dataset loader and image transforms
-|-- aug_funcs.py             # Image augmentation utilities
-|-- utils.py                 # Evaluation, logging, schedulers, and metrics
-|-- inference_onnx.py        # ONNX inference utility
-|-- requirements.txt         # Python dependencies
-|-- LICENSE                  # MIT License
-|-- backbones/               # Backbone resources
-|-- beit/                    # BEiT vision transformer implementation
-|-- dinov1/                  # DINOv1 vision transformer implementation
-|-- dinov2/                  # DINOv2 backbone and related modules
-|-- flops_profiler/          # FLOPs and parameter profiling utilities
-|-- models/                  # DNP-ConFormer model and transformer blocks
-|   |-- DNP_ConFormer.py     # INP_Former architecture
-|   |-- vit_encoder.py       # Encoder loading utilities
-|   `-- vision_transformer.py # Decoder and aggregation blocks
-|-- optimizers/              # Optimizer implementations
-|-- prepare_dataset/         # Dataset preparation scripts
-|-- dataset/                 # Place prepared datasets here
-`-- assets/                  # Optional figures, logs, and release assets
+|-- main.py                   # Training and testing entry point
+|-- dataset.py                # Dataset loader and transforms
+|-- aug_funcs.py              # Image augmentation utilities
+|-- utils.py                  # Metrics, logging, scheduler, and evaluation
+|-- inference_onnx.py         # ONNX inference utility
+|-- requirements.txt          # Python dependencies
+|-- README.md                 # Project documentation
+|-- LICENSE                   # MIT License
+|-- assets/
+|   `-- fig/                  # Figures from the MICCAI paper
+|-- beit/                     # BEiT backbone implementation
+|-- dinov1/                   # DINOv1 backbone implementation
+|-- dinov2/                   # DINOv2 backbone and utilities
+|-- flops_profiler/           # FLOPs and parameter profiling tools
+|-- models/
+|   |-- DNP_ConFormer.py      # INP_Former / DNP-ConFormer architecture
+|   |-- vit_encoder.py        # Backbone loading utilities
+|   `-- vision_transformer.py # MLP, aggregation, and prototype decoder blocks
+|-- optimizers/
+|   `-- StableAdamW.py        # StableAdamW optimizer
+|-- prepare_dataset/
+|   |-- prepare_aptos.py      # APTOS2019 preprocessing
+|   |-- prepare_br35h.py      # BrainMRI / Br35H preprocessing
+|   `-- prepare_isic2018.py   # ISIC2018 preprocessing
+`-- dataset/                  # Place prepared datasets here
 ```
 
 ## Installation
@@ -63,24 +123,26 @@ DNP-ConFormer/
 ### Prerequisites
 
 - Python 3.8+
-- CUDA-capable GPU is recommended for training
-- PyTorch with a CUDA version matching your local driver
+- CUDA-capable GPU is recommended
+- PyTorch matching your local CUDA driver
 
 ### Install Dependencies
 
 ```bash
-git clone https://github.com/liluhu0/DNP-ConFormer.git
+git clone git@github.com:liluhu0/DNP-ConFormer.git
 cd DNP-ConFormer
 pip install -r requirements.txt
 ```
 
-If your CUDA version is different from CUDA 11.8, install the matching PyTorch build from the official PyTorch index before installing the remaining dependencies.
+The released requirement file uses PyTorch with CUDA 11.8. If your CUDA version differs, install the matching PyTorch and torchvision packages first, then install the remaining dependencies.
 
 ## Usage
 
 ### 1. Prepare Data
 
-Prepare the dataset with the following structure:
+The training protocol follows unsupervised anomaly detection: train on normal images only and test on mixed normal / abnormal cases.
+
+Expected folder structure:
 
 ```text
 dataset/APTOS2019/
@@ -94,7 +156,7 @@ dataset/APTOS2019/
         `-- image files
 ```
 
-Dataset-specific preprocessing scripts are available in `prepare_dataset/`:
+Dataset preparation scripts are provided:
 
 ```bash
 python prepare_dataset/prepare_aptos.py
@@ -104,58 +166,60 @@ python prepare_dataset/prepare_isic2018.py
 
 ### 2. Configure Parameters
 
-Core parameters can be configured from the command line:
+Core arguments are defined in `main.py`.
 
 ```bash
 python main.py \
   --dataset APTOS2019 \
   --data_path ./dataset/APTOS2019 \
   --encoder dinov2reg_vit_small_14 \
-  --input_size 252 \
+  --input_size 224 \
   --INP_num 6 \
-  --total_iters 5000 \
   --batch_size 32 \
+  --lr 1e-4 \
+  --encoder_lr 1e-5 \
+  --INP_loss_weight 0.2 \
+  --ema_contrast True \
+  --ema_decay 0.999 \
   --phase train
 ```
 
-Important options:
+Implementation details from the paper:
 
-- `--dataset`: Dataset name, such as `APTOS2019`, `Br35H`, `ISIC2018`, or `OCT2017`.
-- `--data_path`: Path to the prepared dataset root.
-- `--encoder`: Backbone encoder name, such as `dinov2reg_vit_small_14`, `dinov2reg_vit_base_14`, or `dinov2reg_vit_large_14`.
-- `--phase`: Use `train` for training and `test` for evaluation.
-- `--save_dir`: Root directory for checkpoints, logs, and evaluation outputs.
+- Backbone: ViT-Small/14 with DINOv2-R weights.
+- Optimizer: StableAdamW.
+- Batch size: 32.
+- Decoder / bottleneck / DNP extractor learning rate: `1e-4`.
+- Encoder learning rate: `1e-5`.
+- DNP number: `M = 6`.
+- Momentum coefficient: `beta = 0.999`.
+- DAA loss weight: `lambda = 0.2` (`--INP_loss_weight 0.2` in the released code).
+- Training iterations: 8k for OCT2017, 5k for APTOS2019 and BrainMRI, 4k for ISIC2018.
 
 ### 3. Train
 
 ```bash
-python main.py --phase train --data_path ./dataset/APTOS2019
+python main.py --phase train --data_path ./dataset/APTOS2019 --dataset APTOS2019 --total_iters 5000 --INP_loss_weight 0.2 --ema_decay 0.999
 ```
 
 ### 4. Test
 
 ```bash
-python main.py --phase test --data_path ./dataset/APTOS2019
+python main.py --phase test --data_path ./dataset/APTOS2019 --dataset APTOS2019
 ```
 
 ### 5. Output
 
-Results are saved under `saved_results/`, including:
-
-- `model.pth`: Final model checkpoint.
-- `model_best.pth`: Best model checkpoint during validation.
-- `ema_encoder.pth`: EMA encoder checkpoint when EMA contrast is enabled.
-- `image_test/`: Test-time visual outputs when `save_root` is enabled.
-- Log files containing AUROC, AP, F1, accuracy, recall, specificity, and threshold statistics.
+Outputs are saved under `saved_results/`, including model checkpoints, EMA encoder checkpoints, logs, image-level metrics, and anomaly-map visualizations when test-time saving is enabled.
 
 ## Citation
 
 If you find this work useful, please cite:
 
 ```bibtex
-@inproceedings{dnpconformer2026,
-  title={DNP-ConFormer: Diverse Normal Prototypes-Guided Contrastive Reconstruction for Medical Anomaly Detection},
-  author={DNP-ConFormer Authors},
+@inproceedings{li2026dnpconformer,
+  title={Diverse Normal Prototypes-Guided Contrastive Reconstruction for Medical Anomaly Detection},
+  author={Li, Luhu and Liu, Bin and Lin, Bowen and Shen, Zihan and Wang, Chengwei and Fu, Shujun},
   booktitle={International Conference on Medical Image Computing and Computer-Assisted Intervention (MICCAI)},
   year={2026}
 }
@@ -167,4 +231,4 @@ This project is released under the [MIT License](LICENSE).
 
 ## Acknowledgments
 
-This repository follows the open-source release style of [SeedPro](https://github.com/Haitao-Lee/SeedPro). We also acknowledge the DINO, DINOv2, BEiT, PyTorch, and timm communities for open-source components used by this project.
+This work was supported in part by the National Natural Science Foundation of China (NSFC) and the Shandong Provincial Natural Science Foundation. We also acknowledge the open-source DINO, DINOv2, BEiT, PyTorch, timm, and StableAdamW communities.

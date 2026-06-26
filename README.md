@@ -1,5 +1,4 @@
 # DNP-ConFormer: Diverse Normal Prototypes-Guided Contrastive Reconstruction for Medical Anomaly Detection
-
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MICCAI 2026](https://img.shields.io/badge/MICCAI-2026-blue.svg)](https://conferences.miccai.org/2026/)
 

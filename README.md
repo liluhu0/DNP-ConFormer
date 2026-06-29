@@ -62,7 +62,7 @@ This objective improves representation adaptation while keeping prototype assign
 DNP-ConFormer is evaluated on three public benchmarks. All results are averaged over five independent runs.
 
 | Dataset | AUC | F1 | ACC |
-| --- | ---: | ---: | ---: |
+| --- | --- | --- | --- |
 | APTOS2019 | **97.92** | **95.69** | **93.91** |
 | OCT2017 | **99.83** | **99.13** | **98.70** |
 | ISIC2018 | **91.73** | **82.61** | **87.05** |
@@ -70,12 +70,12 @@ DNP-ConFormer is evaluated on three public benchmarks. All results are averaged 
 ### BrainMRI Clinical Dataset
 
 | Image-level | AUC | F1 | ACC |
-| --- | ---: | ---: | ---: |
-| Image-level | **92.52** | **87.10** | **85.39** |
+| --- | --- | --- | --- |
+| BrainMRI | **92.52** | **87.10** | **85.39** |
 
 | Pixel-level  | AUC | AP | F1 | AUPRO |
-| --- | ---: | ---: | ---: | ---: |
-| Pixel-level | **98.53** | **46.03** | **51.10** | **89.27** |
+| --- | --- | --- | --- | --- |
+| BrainMRI | **98.53** | **46.03** | **51.10** | **89.27** |
 
 ### Qualitative Visualization
 

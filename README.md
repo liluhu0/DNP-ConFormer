@@ -69,11 +69,15 @@ DNP-ConFormer is evaluated on three public benchmarks. All results are averaged 
 
 ### BrainMRI Clinical Dataset
 
-| Image-level | AUC | F1 | ACC |
+#### Image-level
+
+| Dataset | AUC | F1 | ACC |
 | --- | --- | --- | --- |
 | BrainMRI | **92.52** | **87.10** | **85.39** |
 
-| Pixel-level  | AUC | AP | F1 | AUPRO |
+#### Pixel-level
+
+|  Dataset | AUC | AP | F1 | AUPRO |
 | --- | --- | --- | --- | --- |
 | BrainMRI | **98.53** | **46.03** | **51.10** | **89.27** |
 

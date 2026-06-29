@@ -6,7 +6,6 @@
 ## News
 
 - **[2026/06]** DNP-ConFormer has been **provisionally accepted to MICCAI 2026**.
-- The official code is released at [liluhu0/DNP-ConFormer](https://github.com/liluhu0/DNP-ConFormer).
 
 **DNP-ConFormer** is a unified medical anomaly detection framework for domain-adaptive contrastive reconstruction. It combines a trainable student encoder, a momentum teacher encoder, Diverse Normal Prototypes (DNPs), and a Diversity-Aware Alignment loss to improve anomaly detection and localization under medical domain shifts.
 

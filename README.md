@@ -230,4 +230,4 @@ This project is released under the [MIT License](LICENSE).
 
 ## Acknowledgments
 
-This work was supported in part by the National Natural Science Foundation of China (NSFC) and the Shandong Provincial Natural Science Foundation. We also acknowledge the open-source DINO, DINOv2, BEiT, [Dinomly](https://github.com/guojiajeremy/Dinomaly) communities.
+This work was supported in part by the National Natural Science Foundation of China (NSFC) and the Shandong Provincial Natural Science Foundation. We also acknowledge the open-source DINO, DINOv2, [INP-Former](https://github.com/luow23/INP-Former), [Dinomly](https://github.com/guojiajeremy/Dinomaly) communities.
